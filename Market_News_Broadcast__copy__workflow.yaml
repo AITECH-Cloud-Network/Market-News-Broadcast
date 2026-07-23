@@ -1,2 +1,180 @@
 version: '1.0'
-blocks: {}
+blocks:
+  3bc19392-a090-4588-a6f6-a65219402f8f:
+    type: starter
+    name: Start
+    inputs:
+      startWorkflow: manual
+    connections:
+      success: 3e7937b6-f0a1-4d08-a8cf-7da345a6c3d8
+  7cc6af69-b943-444e-8aec-af6fa82f87de:
+    type: loop
+    name: Loop 1
+    inputs:
+      count: 5
+      loopType: forEach
+      collection: <supabase1.results>
+    connections:
+      loop:
+        start: a811e098-5621-4fb1-8ef4-3ed533f7cdc7
+  b6bf45cb-4fa1-46da-956a-012a8ae2599c:
+    type: api
+    name: API 1
+    inputs:
+      url: <source1.result>
+      method: GET
+      params:
+        - id: 681bcb9e-c329-4570-95d2-3bfefa718575
+          cells:
+            Key: vs_currency
+            Value: usd
+        - id: f37bb213-e447-4f45-9911-42cc74f217d4
+          cells:
+            Key: ''
+            Value: ''
+    connections:
+      success: 77819fd1-fde4-450c-84cd-e821dc9c7eaf
+  77819fd1-fde4-450c-84cd-e821dc9c7eaf:
+    type: agent
+    name: Agent 1
+    inputs:
+      systemPrompt: |-
+        You are a financial analyst. 
+
+        Input Data:  
+        1. Market News: <api2.data>, <api1.data>, <api3.data>  
+
+        TASK:  
+        1. Internalise today’s key market events by analyzing the input data.
+           - Cover top indices, notable stock/crypto/forex moves, and major news sentiment.  
+        2. Generate TWO outputs:
+           - "x" → A concise, punchy post for X (≤280 chars, hashtags/emojis allowed).  
+           - "newsletter" → A detailed, professional summary formatted as an email newsletter with:  
+               • A short headline/title  
+               • A brief intro line  
+               • A structured body (paragraphs or bullet points)  
+               • A closing note (e.g., “Stay tuned for tomorrow’s market update.”)
+        - Use a newline to make the headings.
+
+        OUTPUT:  
+
+        Return ONLY in this format:  
+        {
+          "x": "news",
+          "newsletter": "formatted newsletter email"
+        }
+      model: gpt-4o
+    connections:
+      success:
+        - c0450b26-ffb3-42d7-bc3b-fd81bd7058cf
+        - e88161df-8f3c-471d-8025-70035afb132a
+  e81a490b-a558-4fb1-8880-ad6ca82d6dd2:
+    type: api
+    name: API 3
+    inputs:
+      url: <source2.result>
+      method: GET
+      params:
+        - id: 405c55d2-4692-4d48-a057-bb1e5172c0e4
+          cells:
+            Key: q
+            Value: stock market
+        - id: 5f8da2b2-d22d-4365-bf71-fcac553ad932
+          cells:
+            Key: ''
+            Value: ''
+    connections:
+      success: 77819fd1-fde4-450c-84cd-e821dc9c7eaf
+  a811e098-5621-4fb1-8ef4-3ed533f7cdc7:
+    type: gmail
+    name: Gmail 1
+    inputs:
+      operation: send_gmail
+      to: <loop.currentItem.email>
+      subject: Market Updates
+      body: <newsletter.result>
+    parentId: 7cc6af69-b943-444e-8aec-af6fa82f87de
+  03034600-4c0a-46b2-b35d-e3f9b350e778:
+    type: function
+    name: Source2
+    inputs:
+      code: |-
+        const URL= "https://news.google.com/rss/search"
+
+        return URL 
+    connections:
+      success: e81a490b-a558-4fb1-8880-ad6ca82d6dd2
+  5e6ad66c-f6e6-4c13-90a1-1c3341c68ce3:
+    type: x
+    name: X 1
+    inputs:
+      operation: x_write
+      text: <x.result>
+  660ab0dc-8b3f-4389-8987-00a72c7c188f:
+    type: function
+    name: Source1
+    inputs:
+      code: |-
+        const URL= "https://api.coingecko.com/api/v3/coins/markets"
+
+        return URL 
+    connections:
+      success:
+        - 54c106b0-5516-4d3d-bae9-e2bbb800b41f
+        - b6bf45cb-4fa1-46da-956a-012a8ae2599c
+  c0450b26-ffb3-42d7-bc3b-fd81bd7058cf:
+    type: function
+    name: X
+    inputs:
+      code: |
+        return JSON.parse(<agent1.content>).x
+    connections:
+      success: 5e6ad66c-f6e6-4c13-90a1-1c3341c68ce3
+  3e7937b6-f0a1-4d08-a8cf-7da345a6c3d8:
+    type: schedule
+    name: Schedule 1
+    inputs:
+      scheduleType: daily
+      dailyTime: '09:00'
+      weeklyDay: MON
+      timezone: UTC
+    connections:
+      success:
+        - 660ab0dc-8b3f-4389-8987-00a72c7c188f
+        - 03034600-4c0a-46b2-b35d-e3f9b350e778
+  54c106b0-5516-4d3d-bae9-e2bbb800b41f:
+    type: api
+    name: API 2
+    inputs:
+      url: <source1.result>
+      method: GET
+      params:
+        - id: 1f258538-e30f-4ca4-80c0-72065c4a7ccb
+          cells:
+            Key: vs_currency
+            Value: usd
+        - id: 6df10bf8-18b2-461a-a869-3e1fcd0ee907
+          cells:
+            Key: ids
+            Value: bitcoin,ethereum,dogecoin
+        - id: 5384c165-1df5-4bd9-8bc5-0b592912ccc3
+          cells:
+            Key: ''
+            Value: ''
+    connections:
+      success: 77819fd1-fde4-450c-84cd-e821dc9c7eaf
+  e88161df-8f3c-471d-8025-70035afb132a:
+    type: function
+    name: Newsletter
+    inputs:
+      code: |
+        return JSON.parse(<agent1.content>).newsletter
+    connections:
+      success: df03b819-a89d-4ccb-8224-fce0c9e35699
+  df03b819-a89d-4ccb-8224-fce0c9e35699:
+    type: supabase
+    name: Supabase 1
+    inputs:
+      operation: query
+    connections:
+      success: 7cc6af69-b943-444e-8aec-af6fa82f87de
